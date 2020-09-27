@@ -102,13 +102,13 @@ void Sim800L::loop()
     {
         const String responce = m_ssw.waitResponce();
 
-        TRACE (responce);
+        TRACE ("Sim800L::loop: '" + responce + "'");
 
         // Пришло сообщение об отправке SMS
         if(responce.startsWith("+CMTI:"))
         {
             TRACE ("Sim800L::loop 1");
-            
+
             const int i = responce.lastIndexOf(",");   // Находим последнюю запятую, перед индексом
             TRACE ("Sim800L::loop 2 - " + i);
             String index = responce.substring(i + 1, responce.length()); // Получаем индекс
@@ -119,8 +119,11 @@ void Sim800L::loop()
         // получили содержимое SMS
         if(responce.startsWith("AT+CMGR"))
         {
+            TRACE ("Sim800L::loop: inputSmsHandler");
             inputSmsHandler(responce);
         }
+
+        TRACE ("Sim800L::loop: responce processed");
     }
 }
 
