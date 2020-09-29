@@ -1,55 +1,94 @@
-//#define DEBUG
+#define DEBUG
 
+#include <DS1307RTC.h>
+#include <SD.h>
 #include <Sim800L.h>
+#include <SPI.h>
+#include <TimeLib.h>
+#include <Wire.h>
 
-          
-#define PIN_LAMP 13
-#define PIN_RX  8
-#define PIN_TX  9
+#define PIN_SD_SELECT 8
+#define PIN_RX  A1
+#define PIN_TX  A0
 
-#define VALID_PHONE "+79773927957"
+#define VALID_PHONES "+79104828275 +79773927957"
+#define LOG_FILE "log.txt"
 
+#define MSG_REQUEST "req"
 
 Sim800L sim800l(PIN_RX, PIN_TX);
-bool bLamp = false;
+
+//---------------------------------------------------------
+
+void writeLog(const String& text)
+{
+    tmElements_t time;
+    RTC.read(time);
+
+    const String logText = time.Day + "." + time.Month + "." time.Year
+        + " " + time.Hour + ":" + time.Minute + ":" + time.Second;
+        + ": " + text;
+
+    File dataFile = SD.open(LOG_FILE, FILE_WRITE);
+
+    // if the file is available, write to it:
+    if (dataFile)
+    {
+        dataFile.println(logText);
+        dataFile.close();
+    }
+
+    return dataFile;
+}
+
+//---------------------------------------------------------
 
 void setup()
 {
-  INIT_TRACE;
+    INIT_TRACE;
 
-  TRACE("Starting...");
+    TRACE("Starting...");
 
-  sim800l.begin();
+    sim800l.begin();
 
-  pinMode(PIN_LAMP, OUTPUT);
-  digitalWrite(PIN_LAMP, LOW);
+    #ifdef DEBUG
+    // get the date and time the compiler was run
+    if (getDate(__DATE__) && getTime(__TIME__))
+    {
+        tmElements_t tm;
+        RTC.write(tm);
+    }
 
-  TRACE("Ready");
+    #endif
+
+    const bool bSdReady = SD.begin(PIN_SD_SELECT);
+
+    TRACE("Ready");
+    writeLog("Ready");
 }
 
 void loop()
 {
-  sim800l.loop();
+    sim800l.loop();
 
-  UniquePtr<String> pPhoneNumber;
-  UniquePtr<String> pMessage;
+    UniquePtr<String> pPhoneNumber;
+    UniquePtr<String> pMessage;
 
-  sim800l.getSms(pPhoneNumber, pMessage);
-  if(pPhoneNumber 
-  && pMessage
-  && *pPhoneNumber == VALID_PHONE)
-  {
-    TRACE(*pMessage);
-    pMessage->trim();
-    if(pMessage->equalsIgnoreCase("fun"))
+    sim800l.getSms(pPhoneNumber, pMessage);
+    if(pPhoneNumber
+    && pMessage
+    && VALID_PHONES.indexOf(*pPhoneNumber) != -1)
     {
-      bLamp = !bLamp;
-      const int funMode = bLamp ? HIGH : LOW;
-      digitalWrite(PIN_LAMP, funMode);
+        TRACE(*pMessage);
+        pMessage->trim();
+        const String logText = "Receive SMS from " + *pPhoneNumber
+            + ", message: \"" + *pMessage + "\"";
+
+        const bool bLogSuccess = writeLog(logText);
+
+        if(pMessage->equalsIgnoreCase(MSG_REQUEST))
+        {
+            //sim800l.sendSms(*pPhoneNumber, *pMessage + "?, I am robot! :)");
+        }
     }
-    else
-    {
-      sim800l.sendSms(*pPhoneNumber, *pMessage + "?, I am robot! :)");
-    }
-  }
 }
