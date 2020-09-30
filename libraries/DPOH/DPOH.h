@@ -1,6 +1,8 @@
 #ifndef DPOH_H
 #define DPOH_H
 
+#include <Arduino.h>
+
 #ifdef DEBUG
     #define INIT_TRACE Serial.begin(9600);               // Скорость обмена данными с компьютером
     #define TRACE(MSG) Serial.println(MSG);
@@ -122,12 +124,12 @@ public:
         delete [] m_ptr;
     }
 
-    void reserve(const uint32_t size)
+    void reserve(const unsigned int size)
     {
         if (size > m_dataSize)
         {
             T* ptr = new T[size];
-            for (uint32_t i = 0; i < m_arrSize; ++i)
+            for (unsigned int i = 0; i < m_arrSize; ++i)
             {
                 ptr[i] = m_ptr[i];
             }
@@ -141,17 +143,17 @@ public:
         return (m_arrSize == 0);
     }
 
-    uint32_t size() const
+    unsigned int size() const
     {
         return m_arrSize;
     }
 
-    const T& operator[](const uin32_t index) const
+    const T& operator[](const unsigned int index) const
     {
         return m_ptr[index];
     }
 
-    T& operator[](const uin32_t index)
+    T& operator[](const unsigned int index)
     {
         return m_ptr[index];
     }
@@ -187,8 +189,8 @@ public:
 
 private:
     T* m_ptr;
-    uint32_t m_dataSize;
-    uint32_t m_arrSize;
+    unsigned int m_dataSize;
+    unsigned int m_arrSize;
 };
 
 //---------------------------------------------------------
@@ -196,31 +198,31 @@ private:
 class CountdownTimer
 {
 public:
-  CountdownTimer(const uint32_t timePeriod)
-    : m_timePeriod(timePeriod)
-    , m_timeBegin(millis())
-  {
-
-  }
-
-  void restart(const uint32_t timePeriod = 0)
-  {
-    if (timePeriod)
+    CountdownTimer(const unsigned int timePeriod)
+      : m_timePeriod(timePeriod)
+      , m_timeBegin(millis())
     {
-      m_timePeriod = timePeriod;
+
     }
 
-    m_timeBegin = millis();
-  }
+    void restart(const unsigned int timePeriod = 0)
+    {
+        if (timePeriod)
+        {
+            m_timePeriod = timePeriod;
+        }
 
-  bool isComplete() const
-  {
-    return (millis() - m_timeBegin) > m_timePeriod;
-  }
+        m_timeBegin = millis();
+    }
+
+    bool isComplete() const
+    {
+        return (millis() - m_timeBegin) > m_timePeriod;
+    }
 
 private:
-  uint32_t m_timeBegin;
-  uint32_t m_timePeriod;
+    unsigned int m_timeBegin;
+    unsigned int m_timePeriod;
 };
 
 //---------------------------------------------------------

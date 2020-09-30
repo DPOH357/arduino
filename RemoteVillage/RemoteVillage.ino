@@ -126,8 +126,8 @@ void loop()
                 {
                     const String strNumber = pMessage->substring(indexSpace + 1);
                     TRACE("Set lamp: '" + strNumber + "'");
-                    Data data(Command::SetLamp, strNumber.toInt());
-                    radio.send(data);
+                    RadioData data(RadioCommand::SetLamp, strNumber.toInt());
+                    radio.send(PIPE_1_OUT, data);
                 }
             }
         }

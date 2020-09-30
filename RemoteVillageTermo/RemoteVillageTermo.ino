@@ -1,5 +1,6 @@
 #define DEBUG
 
+#include <DPOH.h>
 #include <DS1307RTC.h>
 #include <Nrf24L01.h>
 #include <RemoteVillageCommon.h>
@@ -38,5 +39,18 @@ void setup()
 
 void loop()
 {
-
+    UniquePtr<RadioData> pData;
+    if (radio.receive(pData))
+    {
+        switch (pData->command)
+        {
+        case RadioCommand::SetLamp:
+        {
+            analogWrite(PIN_LAMP, constrain(pData->value, 0, 255));
+        }
+        break;
+        default:
+            break;
+        }
+    }
 }

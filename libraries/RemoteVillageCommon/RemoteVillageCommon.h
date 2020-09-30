@@ -3,23 +3,23 @@
 
 #define PIPE_1_OUT 0x7878787878LL
 
-enum class Command
+enum class RadioCommand
 {
     Unknown,
     Request,
     SetLamp
-}
+};
 
-struct Data
+struct RadioData
 {
-    Command command;
-    uint32_t data;
+    RadioCommand command;
+    uint32_t value;
 
-    Data(
-        const Command command_ = Command::Unknown,
-        const uint32_t data_ = 0)
+    RadioData(
+        const RadioCommand command_ = RadioCommand::Unknown,
+        const uint32_t value_ = 0)
         : command(command_)
-        , data(data_)
+        , value(value_)
     {
 
     }

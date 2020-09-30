@@ -22,22 +22,22 @@ bool Nrf24L01::begin(
         m_radio.setDataRate(RF24_1MBPS);
         m_radio.setPALevel(RF24_PA_HIGH);
 
-        const uint32_t vecInputPipesSize = vecInputPipes.size();
+        const unsigned int vecInputPipesSize = vecInputPipes.size();
         if (vecInputPipesSize)
         {
-            for (uint32_t i = 0; i < vecInputPipesSize; ++i)
+            for (unsigned int i = 0; i < vecInputPipesSize; ++i)
             {
-                m_radio.openReadingPipe(1, vecInputPipesSize[i]);
+                m_radio.openReadingPipe(1, vecInputPipes[i]);
             }
 
             m_bListening = true;
             m_radio.startListening();
         }
 
-        const uint32_t vecOutputPipesSize = vecOutputPipes.size();
+        const unsigned int vecOutputPipesSize = vecOutputPipes.size();
         if (vecOutputPipesSize)
         {
-            for (uint32_t i = 0; i < vecOutputPipesSize; ++i)
+            for (unsigned int i = 0; i < vecOutputPipesSize; ++i)
             {
                 m_radio.openWritingPipe(vecOutputPipes[i]);
             }
@@ -47,7 +47,7 @@ bool Nrf24L01::begin(
     return bSuccess;
 }
 
-bool Nrf24L01::send(const PipeId pipeId, const void* pData, const uint32_t dataSize)
+bool Nrf24L01::send(const PipeId pipeId, const void* pData, const unsigned int dataSize)
 {
     if (m_bListening)
     {
@@ -64,10 +64,10 @@ bool Nrf24L01::send(const PipeId pipeId, const void* pData, const uint32_t dataS
     return bSuccess;
 }
 
-PipeId Nrf24L01::receive(void* pData, const uint32_t dataSize) const
+Nrf24L01::PipeId Nrf24L01::receive(void* pData, const unsigned int dataSize) const
 {
     PipeId pipeId = 0;
-    if(radio.available(&pipeId))
+    if(m_radio.available(&pipeId))
     {
         m_radio.read(pData, dataSize);
     }

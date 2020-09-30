@@ -22,7 +22,7 @@ public:
     bool send(
         const PipeId pipeId,
         const void* pData,
-        const uint32_t dataSize);
+        const unsigned int dataSize);
 
     template <class T>
     bool send(const PipeId pipeId, const T& data)
@@ -33,7 +33,7 @@ public:
     // if PipeId not 0 then data received
     PipeId receive(
         void* pData,
-        const uint32_t dataSize) const;
+        const unsigned int dataSize) const;
 
     template <class T>
     PipeId receive(UniquePtr<T>& pData)
@@ -48,6 +48,6 @@ public:
 private:
     RF24 m_radio;
     bool m_bListening;
-}
+};
 
 #endif // NRF24L01_DPOH_H
