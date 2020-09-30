@@ -8,33 +8,71 @@
 #include <Wire.h>
 
 #define PIN_SD_SELECT 8
-#define PIN_RX  A1
-#define PIN_TX  A0
+#define PIN_RX  A1 /*green*/
+#define PIN_TX  A0 /*yellow*/
 
-#define VALID_PHONES "+79104828275 +79773927957"
 #define LOG_FILE "log.txt"
+#define TICK_PERIOD 60000
 
 #define MSG_REQUEST "req"
 
-Sim800L sim800l(PIN_RX, PIN_TX);
+const String validPhones("+79104828275 +79773927957");
 
 //---------------------------------------------------------
 
-void writeLog(const String& text)
+class CountdownTimer
 {
-    tmElements_t time;
-    RTC.read(time);
+public:
+  CountdownTimer(const uint32_t timePeriod)
+    : m_timePeriod(timePeriod)
+    , m_timeBegin(millis())
+  {
 
-    const String logText = time.Day + "." + time.Month + "." time.Year
-        + " " + time.Hour + ":" + time.Minute + ":" + time.Second;
-        + ": " + text;
+  }
 
+  void restart(const uint32_t timePeriod = 0)
+  {
+    if (timePeriod)
+    {
+      m_timePeriod = timePeriod;
+    }
+
+    m_timeBegin = millis();
+  }
+
+  bool isComplete() const
+  {
+    return (millis() - m_timeBegin) > m_timePeriod;
+  }
+
+private:
+  uint32_t m_timeBegin;
+  uint32_t m_timePeriod;
+};
+
+//---------------------------------------------------------
+
+String getCurrentTime()
+{
+    tmElements_t tm;
+    RTC.read(tm);
+
+    char textBuffer[21];
+    sprintf(textBuffer, "%02d.%02d.%04d %02d:%02d:%02d", tm.Day, tm.Month, tmYearToCalendar(tm.Year), tm.Hour, tm.Minute, tm.Second);
+    
+    return textBuffer;
+}
+
+bool writeLog(const String& text)
+{
     File dataFile = SD.open(LOG_FILE, FILE_WRITE);
 
     // if the file is available, write to it:
     if (dataFile)
     {
-        dataFile.println(logText);
+        dataFile.print(getCurrentTime());
+        dataFile.print(": ");
+        dataFile.println(text);
         dataFile.close();
     }
 
@@ -42,6 +80,9 @@ void writeLog(const String& text)
 }
 
 //---------------------------------------------------------
+
+Sim800L sim800l(PIN_RX, PIN_TX);
+CountdownTimer timer(TICK_PERIOD);
 
 void setup()
 {
@@ -51,20 +92,17 @@ void setup()
 
     sim800l.begin();
 
-    #ifdef DEBUG
-    // get the date and time the compiler was run
-    if (getDate(__DATE__) && getTime(__TIME__))
+#if 0
+    if (getDate(__DATE__) && getTime(__TIME__)) 
     {
-        tmElements_t tm;
         RTC.write(tm);
     }
+#endif
 
-    #endif
-
-    const bool bSdReady = SD.begin(PIN_SD_SELECT);
+    SD.begin(PIN_SD_SELECT);
 
     TRACE("Ready");
-    writeLog("Ready");
+    writeLog("Start");
 }
 
 void loop()
@@ -76,19 +114,27 @@ void loop()
 
     sim800l.getSms(pPhoneNumber, pMessage);
     if(pPhoneNumber
-    && pMessage
-    && VALID_PHONES.indexOf(*pPhoneNumber) != -1)
+    && pMessage)
     {
-        TRACE(*pMessage);
         pMessage->trim();
         const String logText = "Receive SMS from " + *pPhoneNumber
             + ", message: \"" + *pMessage + "\"";
 
-        const bool bLogSuccess = writeLog(logText);
-
-        if(pMessage->equalsIgnoreCase(MSG_REQUEST))
+        TRACE(logText);
+            
+        writeLog(logText);
+        
+        if(validPhones.indexOf(*pPhoneNumber) != -1
+        && pMessage->equalsIgnoreCase(MSG_REQUEST))
         {
+            TRACE("Send message");
             //sim800l.sendSms(*pPhoneNumber, *pMessage + "?, I am robot! :)");
         }
+    }
+
+    if(timer.isComplete())
+    {
+        timer.restart();
+        writeLog("Tick");
     }
 }
