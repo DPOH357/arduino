@@ -1,6 +1,9 @@
 #define DEBUG
 
 #include <DS1307RTC.h>
+#include <Nrf24L01.h>
+#include <RemoteVillageCommon.h>
+
 #include <SD.h>
 #include <Sim800L.h>
 #include <SPI.h>
@@ -11,44 +14,17 @@
 #define PIN_RX  A1 /*green*/
 #define PIN_TX  A0 /*yellow*/
 
+#define PIN_RADIO_CE 9
+#define PIN_RADIO_CSN 10
+#define RADIO_CHANNEL 1
+
 #define LOG_FILE "log.txt"
 #define TICK_PERIOD 60000
 
 #define MSG_REQUEST "req"
+#define MSG_TEST "test"
 
 const String validPhones("+79104828275 +79773927957");
-
-//---------------------------------------------------------
-
-class CountdownTimer
-{
-public:
-  CountdownTimer(const uint32_t timePeriod)
-    : m_timePeriod(timePeriod)
-    , m_timeBegin(millis())
-  {
-
-  }
-
-  void restart(const uint32_t timePeriod = 0)
-  {
-    if (timePeriod)
-    {
-      m_timePeriod = timePeriod;
-    }
-
-    m_timeBegin = millis();
-  }
-
-  bool isComplete() const
-  {
-    return (millis() - m_timeBegin) > m_timePeriod;
-  }
-
-private:
-  uint32_t m_timeBegin;
-  uint32_t m_timePeriod;
-};
 
 //---------------------------------------------------------
 
@@ -83,6 +59,7 @@ bool writeLog(const String& text)
 
 Sim800L sim800l(PIN_RX, PIN_TX);
 CountdownTimer timer(TICK_PERIOD);
+Nrf24L01 radio(PIN_RADIO_CE, PIN_RADIO_CSN);
 
 void setup()
 {
@@ -101,7 +78,17 @@ void setup()
 
     SD.begin(PIN_SD_SELECT);
 
-    TRACE("Ready");
+    {
+        Vector<Nrf24L01::PipeId> vecInputPipes;
+        Vector<Nrf24L01::PipeId> vecOutputPipes;
+        vecOutputPipes.push_back(PIPE_1_OUT);
+        if(radio.begin(RADIO_CHANNEL, vecInputPipes, vecOutputPipes))
+        {
+            TRACE("Radio is not ready");
+        }
+    }
+
+    TRACE("Start");
     writeLog("Start");
 }
 
@@ -124,11 +111,25 @@ void loop()
             
         writeLog(logText);
         
-        if(validPhones.indexOf(*pPhoneNumber) != -1
-        && pMessage->equalsIgnoreCase(MSG_REQUEST))
+        if(validPhones.indexOf(*pPhoneNumber) != -1)
         {
-            TRACE("Send message");
-            //sim800l.sendSms(*pPhoneNumber, *pMessage + "?, I am robot! :)");
+            if(pMessage->equalsIgnoreCase(MSG_REQUEST))
+            {
+                TRACE("Send message");
+                //sim800l.sendSms(*pPhoneNumber, *pMessage + "?, I am robot! :)");
+            }
+            else
+            if(pMessage->equalsIgnoreCase(MSG_TEST))
+            {
+                const int indexSpace = pMessage->indexOf(" ");
+                if (indexSpace != -1)
+                {
+                    const String strNumber = pMessage->substring(indexSpace + 1);
+                    TRACE("Set lamp: '" + strNumber + "'");
+                    Data data(Command::SetLamp, strNumber.toInt());
+                    radio.send(data);
+                }
+            }
         }
     }
 
