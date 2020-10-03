@@ -10,12 +10,12 @@
 #include <TimeLib.h>
 #include <Wire.h>
 
-#define PIN_SD_SELECT 8
+#define PIN_SD_SELECT 7
 #define PIN_RX  A1 /*green*/
 #define PIN_TX  A0 /*yellow*/
 
-#define PIN_RADIO_CE 9
-#define PIN_RADIO_CSN 10
+#define PIN_RADIO_CE 8
+#define PIN_RADIO_CSN 9
 #define RADIO_CHANNEL 1
 
 #define LOG_FILE "log.txt"
@@ -51,6 +51,10 @@ bool writeLog(const String& text)
         dataFile.println(text);
         dataFile.close();
     }
+    else
+    {
+        TRACE("Can't open file '" + LOG_FILE + "'");
+    }
 
     return dataFile;
 }
@@ -82,7 +86,7 @@ void setup()
         Vector<Nrf24L01::PipeId> vecInputPipes;
         Vector<Nrf24L01::PipeId> vecOutputPipes;
         vecOutputPipes.push_back(PIPE_1_OUT);
-        if(radio.begin(RADIO_CHANNEL, vecInputPipes, vecOutputPipes))
+        if(!radio.begin(RADIO_CHANNEL, vecInputPipes, vecOutputPipes))
         {
             TRACE("Radio is not ready");
         }
@@ -94,6 +98,18 @@ void setup()
 
 void loop()
 {
+    static int nLamp = 0;
+    RadioData data(RadioCommand::SetLamp, nLamp);
+    radio.send(PIPE_1_OUT, data);
+    ++nLamp;
+    if(nLamp > 255)
+    {
+      nLamp = 0;
+      writeLog("Tick");
+    }
+    delay(100);
+    
+#if 0
     sim800l.loop();
 
     UniquePtr<String> pPhoneNumber;
@@ -138,4 +154,5 @@ void loop()
         timer.restart();
         writeLog("Tick");
     }
+#endif
 }
